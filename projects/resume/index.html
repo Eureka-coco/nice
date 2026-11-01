@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历专家 - AI简历优化Agent</title>
+<style>
+:root {
+  --bg: #fafbfc; --bg-card: #ffffff; --bg-sidebar: #f8f9fb;
+  --bg-morandi-blue: #eef2f7; --bg-morandi-green: #edf3f0;
+  --bg-morandi-rose: #f6f0f0; --bg-morandi-lavender: #f2f0f6;
+  --bg-morandi-sage: #eff2ed;
+  --text: #1a1a2e; --text-secondary: #5f6b7a; --text-tertiary: #8b95a5;
+  --text-muted: #b0b8c5; --border: #e8ecf1; --border-light: #f0f2f5;
+  --accent: #4a6cf7; --accent-light: #eef1fe;
+  --success: #2ea87a; --success-light: #edf7f2;
+  --warning: #e8a838; --warning-light: #fdf6ea;
+  --danger: #e05555; --danger-light: #fdf0f0;
+  --info: #5b8cce; --info-light: #eff4fb;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --nav-h: 52px; --sidebar-w: 220px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.nav { position: sticky; top: 0; left: 0; right: 0; height: var(--nav-h); background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; z-index: 100; gap: 16px; }
+.nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: var(--text); }
+.nav-logo .icon { width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+.nav-status { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.nav-status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.app { display: flex; padding-top: 0; min-height: 100vh; }
+.sidebar { position: sticky; top: 52px; align-self: flex-start; height: calc(100vh - 52px); left: 0; bottom: 0; width: var(--sidebar-w); background: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 20px 12px; overflow-y: auto; z-index: 50; }
+.sidebar-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 0.5px; padding: 0 12px; margin-bottom: 12px; }
+.step-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.step-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: all 0.15s; border: 1px solid transparent; }
+.step-item:hover { background: var(--bg-card); color: var(--text); }
+.step-item.active { background: var(--bg-card); color: var(--text); font-weight: 600; border-color: var(--border); box-shadow: var(--shadow-sm); }
+.step-item.done { color: var(--success); }
+.step-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; background: var(--border-light); color: var(--text-tertiary); }
+.step-item.active .step-num { background: var(--accent); color: #fff; }
+.step-item.done .step-num { background: var(--success); color: #fff; }
+.main { margin-left: 0; flex: 1; padding: 28px 36px; max-width: calc(100% - var(--sidebar-w)); }
+.section-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.section-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.form-hint { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+.form-input, .form-textarea, .form-select { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font-sans); color: var(--text); background: var(--bg); transition: border-color 0.15s; resize: vertical; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.form-textarea { min-height: 80px; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; font-family: var(--font-sans); white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #3b5de7; }
+.btn-secondary { background: var(--bg); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { background: var(--border-light); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-strong { background: var(--success-light); color: var(--success); }
+.badge-medium { background: var(--warning-light); color: var(--warning); }
+.badge-weak { background: var(--danger-light); color: var(--danger); }
+.badge-none { background: var(--border-light); color: var(--text-tertiary); }
+.badge-tag { background: var(--accent-light); color: var(--accent); }
+.badge-info { background: var(--info-light); color: var(--info); }
+.progress-bar { height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.progress-fill.low { background: var(--danger); }
+.progress-fill.mid { background: var(--warning); }
+.progress-fill.high { background: var(--success); }
+.score-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; }
+.score-wrap { display: flex; align-items: center; gap: 24px; }
+.dim-scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+.dim-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.dim-value { font-weight: 600; font-size: 12px; }
+.table-wrap { overflow-x: auto; margin: 12px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+th { font-weight: 600; font-size: 12px; color: var(--text-secondary); background: var(--bg-sidebar); white-space: nowrap; }
+tr:hover td { background: var(--bg); }
+td { color: var(--text); vertical-align: top; }
+.diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light); }
+.diff-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.diff-label { font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.diff-label.before { color: var(--danger); }
+.diff-label.after { color: var(--success); }
+.diff-text { font-size: 13px; line-height: 1.6; padding: 10px 12px; border-radius: var(--radius-sm); }
+.diff-text.before { background: #fef5f5; border-left: 2px solid var(--danger); }
+.diff-text.after { background: #f5faf7; border-left: 2px solid var(--success); }
+.diff-reason { font-size: 12px; color: var(--text-secondary); margin-top: 6px; font-style: italic; }
+.diff-risk { font-size: 11px; color: var(--warning); margin-top: 4px; }
+.inquiry-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; background: var(--bg-card); }
+.inquiry-card .q-num { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.inquiry-card .q-text { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.inquiry-card .q-hint { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; }
+.inquiry-card textarea { width: 100%; min-height: 60px; }
+.inquiry-card .q-result { margin-top: 10px; padding: 10px; background: var(--bg-morandi-green); border-radius: var(--radius-sm); font-size: 13px; display: none; }
+.style-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; background: var(--bg); transition: all 0.15s; }
+.style-btn:hover, .style-btn.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.interview-q { padding: 14px; border-left: 3px solid var(--border); margin-bottom: 10px; background: var(--bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.interview-q .q-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; }
+.interview-q .q-body { font-size: 14px; font-weight: 600; margin: 4px 0; }
+.interview-q .q-tip { font-size: 12px; color: var(--text-secondary); }
+.resume-preview { font-family: var(--font-sans); line-height: 1.8; }
+.resume-preview h3 { font-size: 16px; border-bottom: 2px solid var(--text); padding-bottom: 4px; margin: 20px 0 10px; }
+.resume-preview h4 { font-size: 14px; margin: 12px 0 4px; }
+.resume-preview .resume-header { text-align: center; margin-bottom: 20px; }
+.resume-preview .resume-header h2 { font-size: 24px; margin-bottom: 6px; }
+.resume-preview .resume-header p { font-size: 13px; color: var(--text-secondary); }
+.resume-preview ul { padding-left: 20px; }
+.resume-preview li { font-size: 13px; margin-bottom: 4px; }
+.resume-preview .exp-item { margin-bottom: 14px; }
+.resume-preview .exp-title { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; }
+.resume-preview .exp-sub { font-size: 13px; color: var(--text-secondary); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 13px; z-index: 999; opacity: 0; transform: translateY(10px); transition: all 0.25s; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.loading-dots { display: inline-flex; gap: 4px; }
+.loading-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: bounce 1.4s infinite ease-in-out both; }
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-tertiary); }
+.empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+.alert-info { background: var(--info-light); color: var(--info); border-left: 3px solid var(--info); }
+.alert-warning { background: var(--warning-light); color: #9a6b1a; border-left: 3px solid var(--warning); }
+.alert-success { background: var(--success-light); color: var(--success); border-left: 3px solid var(--success); }
+mark { background: #fef9e7; color: inherit; padding: 1px 3px; border-radius: 2px; }
+.text-muted { color: var(--text-tertiary); font-size: 12px; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; } .mb-16 { margin-bottom: 16px; }
+@media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; max-width: 100%; padding: 20px 16px; } .diff-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body><div style="position:relative;z-index:1000;background:#fff3ce;color:#453b20;padding:14px 20px;font:14px/1.6 system-ui;border-bottom:1px solid #dbc780"><a href="../../index.html">← 返回作品集</a> · <strong>交互原型演示</strong>：使用预设样例，未调用真实 AI；输入变化不代表系统完成了对应分析。请使用脱敏示例。</div>
+
+<nav class="nav">
+  <div class="nav-logo"><div class="icon">📋</div><span>简历专家</span></div>
+  <div class="nav-status"><span class="dot"></span> Mock AI 引擎就绪</div>
+</nav>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-title">分析流程</div>
+    <ul class="step-list" id="stepList">
+      <li class="step-item active" data-step="1"><span class="step-num">1</span>输入材料</li>
+      <li class="step-item" data-step="2"><span class="step-num">2</span>JD 解析</li>
+      <li class="step-item" data-step="3"><span class="step-num">3</span>简历诊断</li>
+      <li class="step-item" data-step="4"><span class="step-num">4</span>匹配分析</li>
+      <li class="step-item" data-step="5"><span class="step-num">5</span>经历追问</li>
+      <li class="step-item" data-step="6"><span class="step-num">6</span>简历优化</li>
+      <li class="step-item" data-step="7"><span class="step-num">7</span>面试准备</li>
+      <li class="step-item" data-step="8"><span class="step-num">8</span>导出结果</li>
+    </ul>
+  </aside>
+  <main class="main" id="mainContent"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 简历专家 - AI Resume Expert Agent v3
+// 基于预设案例素材（非作者履历证明）数据，绝不编造经历/数据/职位/成果
+// ============================================================
+
+const state = {
+  currentStep: 1, analysisDone: false,
+  input: { targetRole:'', industry:'', companyType:'', jobStage:'', highlightAbilities:'', jd:'', resume:'', extraInfo:'' },
+  jdAnalysis: null, diagnosis: null, matchTable: null,
+  inquiries: [], inquiryAnswers: {},
+  optimizationResults: [], _originalOptimization: [],
+  finalResume: null, interviewPrep: null, activeStyle: 'balanced'
+};
+
+// ===== 示例数据：严格基于示例候选人真实简历 =====
+const exampleData = {
+  targetRole: 'AI 产品经理',
+  industry: 'AI 应用',
+  companyType: '大厂 / AI 创业公司',
+  jobStage: '非应届生（28届），实习+项目经验，寻求 AI PM 全职机会',
+  highlightAbilities: 'AI 产品能力、项目推进能力、业务理解能力、竞品分析能力',
+  jd: `【岗位名称】AI 产品经理（大模型应用方向）
+【部门】AI 产品部
+【薪资】20-40K·15薪
+
+【岗位职责】
+1. 负责大模型应用产品的规划与设计，包括对话机器人、知识库问答、智能搜索等场景
+2. 深入理解 ToB 客户业务场景，将客户需求转化为产品方案，推动产品落地与迭代
+3. 跟踪大模型技术发展趋势，探索 AI 在垂直行业的应用机会
+4. 撰写 PRD，协调算法、工程、设计团队完成产品开发，对产品体验和业务指标负责
+5. 设计 Prompt 策略和 RAG 方案，持续优化模型输出质量
+6. 构建产品数据指标体系，通过 A/B 实验和数据分析驱动产品决策
+
+【任职要求】
+1. 本科及以上学历，3-5年互联网产品经验，有 ToB / SaaS 产品经验优先
+2. 熟悉大模型（LLM）、Prompt Engineering、RAG、Agent 等技术原理，有实际应用经验
+3. 具备优秀的逻辑思维和结构化思考能力，能将模糊需求转化为清晰产品方案
+4. 有数据分析能力，熟练使用 SQL，能用数据验证产品假设
+5. 有从0到1的产品设计经验，能独立完成产品规划和落地
+6. 优秀的跨团队沟通协作能力，能推动多方达成共识
+
+【加分项】
+- 有 AI 产品商业化经验
+- 有垂直行业（制造/零售/金融/医疗）产品经验
+- 有技术背景或计算机相关专业`,
+  resume: `【个人信息】
+姓名：示例候选人
+电话：138****0000
+邮箱：demo@example.com
+求职意向：产品经理 | 期望薪资：10-15K
+
+【教育背景】
+985 高校 | 信息管理与信息系统 | 本科 | 2024-2028
+CET-4：552 | CET-6：501
+相关课程：数据分析、Python 编程、数据库原理、管理信息系统
+
+【实习经历】
+01AI 公司 | AI 产品实习生 | 2026.04-至今
+- 参与大模型对话产品的需求分析和 PRD 撰写
+- 使用 Figma 设计产品原型，推动功能上线
+- 调研 ChatGPT、Claude、Kimi 等国内外 AI 产品，输出竞品分析报告
+- 协助 Prompt 策略优化，提升对话质量
+- 参与客户需求对接，整理用户反馈
+
+【项目经历】
+Tidyo APP 项目 | 产品负责人 | 2025.03-2025.09
+- 负责 Tidyo APP 的产品规划与设计，定位为 AI+CV 图像创作工具
+- 独立完成产品调研、需求文档、原型设计（Figma）
+- 协调开发团队完成 AI Demo 开发
+- 项目获得校级创新创业大赛铜奖
+
+AI 智慧园区项目 | 产品负责人 | 2024.10
+- 设计"智慧导览 / 设施管理 / 安防监控"三大模块
+- 结合 AI 视觉 + AR 导航技术设计产品方案
+- 研究 YOLOv8 / SAM / MiDaS 等模型在园区场景的应用
+- 产出 PPT 方案并进行公开演示
+- 获得 01AI "AI + 行业"创新方案优秀奖
+
+【技能工具】
+- AI 工具：ChatGPT、Claude、Kimi、DeepSeek、OpenRead、Gemini、Grok
+- 办公软件：Word、Excel、PowerPoint
+- 设计工具：Figma、Canva
+- 编程：Python（基础）、Cursor AI
+- 产品技能：PRD 撰写、竞品分析、用户调研、原型设计、Prompt Engineering、RAG、Agent 工作流
+
+【获奖/其他】
+- 校级创新创业大赛铜奖
+- 01AI "AI + 行业"创新方案优秀奖`,
+  extraInfo: 'Python 学过但不太擅长；Coze、RAG、Agent 工作流正在学习中；Axure、Figma、SQL、Dify、Cursor 等工具计划学习。目前无量化数据结果的项目经历。无全职工作经验，仅有实习和在校项目。'
+};
+
+// ===== 导航 =====
+function navigateTo(step) {
+  state.currentStep = step;
+  document.querySelectorAll('.step-item').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.remove('active','done');
+    if (s === step) el.classList.add('active');
+    if (s < step) el.classList.add('done');
+  });
+  renderPage(step);
+  document.getElementById('mainContent').scrollIntoView({ behavior:'smooth' });
+}
+
+function renderPage(step) {
+  const m = document.getElementById('mainContent');
+  const fn = [null,renderStep1,renderStep2,renderStep3,renderStep4,renderStep5,renderStep6,renderStep7,renderStep8][step];
+  if (fn) fn(m);
+}
+
+// ===== Step 1: 输入材料 =====
+function renderStep1(container) {
+  const i = state.input;
+  container.innerHTML =
+    '<div class="section-title">📋 输入材料</div>'+
+    '<div class="section-desc">填写目标岗位信息和简历内容，或使用示例数据快速体验</div>'+
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div class="card-title">求职目标</div><button class="btn btn-secondary btn-sm" onclick="fillExampleData()">📥 使用示例数据</button></div>'+
+    '<div class="form-row"><div class="form-group"><label class="form-label">目标岗位 *</label><input class="form-input" id="inpRole" value="'+esc(i.targetRole)+'" placeholder="例如：AI 产品经理"></div><div class="form-group"><label class="form-label">目标行业</label><input class="form-input" id="inpIndustry" value="'+esc(i.industry)+'" placeholder="例如：AI 应用"></div></div>'+
+    '<div class="form-row"><div class="form-group"><label class="form-label">目标公司类型</label><input class="form-input" id="inpCompany" value="'+esc(i.companyType)+'" placeholder="例如：大厂 / AI 创业公司"></div><div class="form-group"><label class="form-label">当前求职阶段</label><input class="form-input" id="inpStage" value="'+esc(i.jobStage)+'" placeholder="例如：社招 / 校招 / 转行"></div></div>'+
+    '<div class="form-group"><label class="form-label">希望突出的能力</label><input class="form-input" id="inpAbilities" value="'+esc(i.highlightAbilities)+'" placeholder="例如：AI 产品能力、数据分析能力"></div></div>'+
+    '<div class="card"><div class="card-title mb-16">目标岗位 JD</div><div class="form-group"><textarea class="form-textarea" id="inpJD" style="min-height:200px;" placeholder="请粘贴目标岗位的 JD 描述...">'+esc(i.jd)+'</textarea></div></div>'+
+    '<div class="card"><div class="card-title mb-16">原始简历</div><div class="form-group"><textarea class="form-textarea" id="inpResume" style="min-height:200px;" placeholder="请粘贴您的原始简历...">'+esc(i.resume)+'</textarea></div></div>'+
+    '<div class="card"><div class="card-title mb-16">补充信息（可选）</div><div class="form-group"><textarea class="form-textarea" id="inpExtra" placeholder="补充说明：掌握的工具/技能、数据结果、特殊要求等...">'+esc(i.extraInfo)+'</textarea></div></div>'+
+    '<div style="display:flex;gap:8px;align-items:center;"><button class="btn btn-primary" onclick="startAnalysis()" style="padding:12px 32px;font-size:15px;">🚀 开始分析</button><span class="text-muted">使用本地 Mock AI 引擎生成完整分析结果</span></div><div id="analysisStatus" style="margin-top:12px;"></div>';
+}
+
+function fillExampleData() {
+  state.input = JSON.parse(JSON.stringify(exampleData));
+  renderPage(1);
+  showToast('✅ 已填充示例数据（基于预设案例素材：01AI 实习 + Tidyo APP + 智慧园区项目）');
+}
+
+function saveInput() {
+  ['inpRole','inpIndustry','inpCompany','inpStage','inpAbilities','inpJD','inpResume','inpExtra'].forEach(id => {
+    const el = document.getElementById(id); if (el) state.input[id.replace('inp','').toLowerCase()] = el.value;
+  });
+  state.input.targetRole = document.getElementById('inpRole')?.value || '';
+  state.input.jd = document.getElementById('inpJD')?.value || '';
+  state.input.resume = document.getElementById('inpResume')?.value || '';
+  state.input.extraInfo = document.getElementById('inpExtra')?.value || '';
+}
+
+function startAnalysis() {
+  saveInput();
+  if (!state.input.jd.trim() || !state.input.resume.trim()) { showToast('⚠️ 请至少填写目标 JD 和原始简历'); return; }
+  const s = document.getElementById('analysisStatus');
+  if (s) s.innerHTML = '<div class="alert alert-info"><span class="loading-dots"><span></span><span></span><span></span></span> 正在载入预设分析样例，请稍候...</div>';
+  setTimeout(() => {
+    generateMockResults();
+    state.analysisDone = true; state.activeStyle = 'balanced';
+    if (s) s.innerHTML = '<div class="alert alert-success">✅ 预设分析样例已载入！请点击左侧流程查看各步骤结果</div>';
+    document.querySelectorAll('.step-item').forEach(el => { const x = parseInt(el.dataset.step); if (x===1) { el.classList.add('done'); el.classList.remove('active'); } });
+    navigateTo(2);
+  }, 1500);
+}
+
+// ===== 生成 Mock 结果（基于预设案例素材（非作者履历证明）） =====
+function generateMockResults() {
+  // --- JD 解析（与简历无关，基于JD本身）---
+  state.jdAnalysis = {
+    responsibilities: [
+      '负责大模型应用产品规划与设计（对话机器人、知识库问答、智能搜索等场景）',
+      '深入理解 ToB 客户业务场景，将客户需求转化为产品方案，推动产品落地与迭代',
+      '跟踪大模型技术发展趋势，探索 AI 在垂直行业的应用机会',
+      '撰写 PRD，协调算法、工程、设计团队完成产品开发，对产品体验和业务指标负责',
+      '设计 Prompt 策略和 RAG 方案，持续优化模型输出质量',
+      '构建产品数据指标体系，通过 A/B 实验和数据分析驱动产品决策'
+    ],
+    hardReqs: [
+      '本科及以上学历', '3-5年互联网产品经验', '熟悉 LLM / Prompt Engineering / RAG / Agent 技术原理',
+      '数据分析能力，熟练使用 SQL', '有从0到1的产品设计经验', '跨团队沟通协作能力'
+    ],
+    hiddenReqs: [
+      '能独立负责一条产品线，而非仅执行需求',
+      '有技术理解力，能与算法工程师深入对话',
+      '对 ToB 业务有体感，理解企业客户的决策链和痛点',
+      '有商业化思维，不只关注功能也关注 ROI',
+      '能应对模糊需求，主动定义产品方向'
+    ],
+    keywords: ['大模型应用','ToB SaaS','Prompt Engineering','RAG','Agent','PRD','数据指标体系','A/B 实验','0到1','跨团队协作','产品规划','商业化'],
+    idealCandidate: '3-5年产品经验，有 ToB/SaaS 背景，熟悉大模型技术原理并有实际落地经验，能独立规划产品、用数据驱动决策、协调多方资源推动产品上线。兼具技术理解力和商业敏感度的产品型人才。',
+    coreAbilities: [
+      { name:'大模型技术理解与应用', weight:'★★★★★', detail:'LLM / Prompt / RAG / Agent 原理 + 实际应用' },
+      { name:'产品规划与落地能力', weight:'★★★★★', detail:'从需求分析到 PRD 到上线迭代的完整闭环' },
+      { name:'ToB 业务理解', weight:'★★★★☆', detail:'理解企业客户场景、决策链和需求转化' },
+      { name:'数据分析能力', weight:'★★★★☆', detail:'SQL + 指标体系 + A/B 实验' },
+      { name:'跨团队协作推进', weight:'★★★★☆', detail:'协调算法、工程、设计等多方资源' }
+    ]
+  };
+
+  // --- 简历诊断 ---
+  state.diagnosis = {
+    overallScore: 38,
+    dimensions: [
+      { name:'岗位匹配度', score:30, comment:'岗位要求3-5年全职经验，你目前为实习+在校项目，年限差距是硬伤' },
+      { name:'简历结构', score:68, comment:'结构基本完整，但缺少职业摘要，经历排序合理' },
+      { name:'职业定位', score:35, comment:'定位模糊，简历顶部没有明确的"AI产品"方向定位' },
+      { name:'实习经历表达', score:40, comment:'实习描述偏"参与/协助"，未体现具体职责和影响力' },
+      { name:'项目经历表达', score:60, comment:'两个AI相关项目是亮点，但表达可更有产品思维' },
+      { name:'成果量化', score:20, comment:'全篇基本无量化的业务成果数据——但你坦诚说明了情况' },
+      { name:'关键词覆盖', score:45, comment:'涵盖部分AI关键词，但缺少ToB/SaaS/商业化等JD核心词' },
+      { name:'差异化亮点', score:40, comment:'两个获奖项目是亮点，但未充分展开AI产品思维深度' },
+      { name:'可信度与面试风险', score:70, comment:'表达保守真实，风险较低。这是你的优势——宁缺毋滥' },
+      { name:'JD契合度', score:30, comment:'经验年限和ToB经验与JD要求差距明显，需正视差距' }
+    ],
+    mainIssues: [
+      '经验年限不匹配：JD要求3-5年全职产品经验，你目前为实习+在校项目。这是客观事实，不要在简历中"包装"成有全职经验',
+      '缺少职业摘要：简历顶部没有一句话定位，HR无法快速判断你的方向和匹配度',
+      '实习描述偏表面：使用"参与""协助"等词，未展示你在实习中的具体贡献和思考深度',
+      '缺少 ToB 视角：JD强调ToB/SaaS，你的经历偏向C端消费者产品（Tidyo）和概念方案（智慧园区）',
+      '无量化结果：全篇没有数据——但这不意味着要编造数据，而是需要思考如何用定性方式表达影响力',
+      'AI经历偏"接触"而非"深入"：Prompt/RAG/Agent列在技能中，但经历描述中未体现具体应用深度'
+    ],
+    priorityActions: [
+      '添加职业摘要：明确定位为"AI 产品方向，有实习+项目实战经验"，坦诚但不自卑',
+      '重构实习表达：从"参与"升级为具体职责描述（你实际做了什么就写什么，不要夸张）',
+      '深化项目产品思维：不只写"用了什么技术"，更要写"为什么选择这个方案"',
+      '补齐缺失关键词：在技能和项目描述中自然融入 ToB、SaaS、产品规划等词',
+      '补充定性影响力：在没有数据的情况下，用"方案被采纳""获得X奖"等定性证据证明能力',
+      '诚实处理经验差距：在职业摘要中主动说明"实习+项目"经验，而非让HR猜测'
+    ]
+  };
+
+  // --- 匹配分析表 ---
+  state.matchTable = [
+    { jdReq:'3-5年产品经验', evidence:'01AI AI产品实习（2026.04-至今）+ 2个独立AI项目', strength:'弱', needSupplement:true, suggestion:'坦诚说明求职阶段（应届生），强调实习+项目经验的质量而非年限' },
+    { jdReq:'ToB/SaaS 产品经验', evidence:'智慧园区项目有B端属性（设施管理面向企业），但非正式工作经历', strength:'弱', needSupplement:true, suggestion:'在智慧园区项目中突出B端产品思维（多角色需求、管理层决策支持）' },
+    { jdReq:'熟悉 LLM/Prompt/RAG/Agent', evidence:'技能列表中有 Prompt Engineering、RAG、Agent 工作流，实习中参与Prompt优化', strength:'中', needSupplement:true, suggestion:'这是你的核心优势方向！在经历中补充具体应用场景。建议补充：Coze/Dify 动手项目' },
+    { jdReq:'从0到1产品设计经验', evidence:'Tidyo APP（独立完成产品调研→原型→PRD）+ 智慧园区方案设计', strength:'中', needSupplement:false, suggestion:'两个项目都是从0到1，在表达中强化完整产品流程（调研→定义→设计→验证）' },
+    { jdReq:'数据分析能力 / SQL', evidence:'信息管理专业（有数据分析/Python/数据库课程），SQL计划学习中', strength:'弱', needSupplement:true, suggestion:'在竞品分析或项目经历中突出数据分析思维。SQL标注为"学习中"请确保真正在学' },
+    { jdReq:'PRD撰写能力', evidence:'01AI实习参与PRD撰写 + Tidyo项目独立撰写PRD', strength:'中', needSupplement:false, suggestion:'已有PRD经验，可在实习描述中更具体化（如"独立完成X模块PRD"）' },
+    { jdReq:'跨团队协作', evidence:'实习中协调团队推动功能上线，项目中协调开发团队', strength:'弱', needSupplement:true, suggestion:'补充具体协作对象和协作方式：和谁协作？协调了几个角色？遇到了什么协作挑战？' },
+    { jdReq:'大模型应用产品规划', evidence:'01AI实习（对话产品）+ AI竞品分析', strength:'中', needSupplement:true, suggestion:'深化：描述你对大模型应用的产品思考，而不只是"我参与了"' },
+    { jdReq:'Prompt策略和RAG方案设计', evidence:'实习中协助Prompt策略优化，技能中列有RAG', strength:'弱', needSupplement:true, suggestion:'这是JD中的核心要求。建议尽快动手做1-2个具体实践（Coze/Dify），丰富证据' },
+    { jdReq:'产品数据指标体系构建', evidence:'无直接经验，信息管理专业有数据分析课程', strength:'无', needSupplement:true, suggestion:'坦诚标注为"学习中"。课程中的数据分析项目可以提及，体现数据思维基础' }
+  ];
+
+  // --- 经历追问 ---
+  state.inquiries = [
+    { id:1, question:'在 01AI 的实习中，你参与的大模型对话产品具体是什么产品？面向什么用户？你写的 PRD 覆盖了哪些功能？', hint:'请描述产品的目标用户、核心场景和你的具体贡献', direction:'实习深度挖掘' },
+    { id:2, question:'你协助 Prompt 策略优化时，具体做了什么？有没有尝试过不同的 Prompt 方法（如 few-shot、chain-of-thought）？效果有什么变化？', hint:'即使没有量化数据，定性的观察（如"回复更准确了""幻觉减少了"）也可以', direction:'AI 技术实践' },
+    { id:3, question:'Tidyo APP 目前是什么状态？有没有用户反馈？如果现在重新审视这个产品，你觉得最大的设计问题是什么？', hint:'复盘反思也是产品能力。即使项目未上线，你的反思也能体现产品思维', direction:'产品复盘' },
+    { id:4, question:'你在竞品分析中研究过哪些 AI 产品？除了功能对比，你发现了什么有意思的产品策略差异？', hint:'从"功能列表对比"提升到"产品策略分析"，是PM成长的关键一步', direction:'产品洞察' },
+    { id:5, question:'智慧园区项目中，你如何决定使用 YOLOv8 / SAM / MiDaS 这些模型？有没有考虑过其他方案？', hint:'体现你的技术选型思维：基于什么业务需求做的技术决策', direction:'技术选型逻辑' },
+    { id:6, question:'你的 RAG 和 Agent 工作流目前学到什么程度了？有没有动手做过 Demo？如果还没有，你计划怎么做？', hint:'动手能力是AI PM的核心竞争力。即使还没做，有清晰的计划也比"我打算学"好', direction:'学习与实践' },
+    { id:7, question:'你在客户需求对接中遇到过什么让你印象深刻的反馈？你是怎么处理的？', hint:'即使是一线客服/用户反馈整理，也能体现你的用户洞察能力', direction:'用户洞察' },
+    { id:8, question:'你觉得自己的简历和这个 JD 最大的差距是什么？如果让你用一句话说服面试官给你面试机会，你会怎么说？', hint:'自我认知和表达能力，也是面试中的重要考察点', direction:'自我定位' }
+  ];
+  state.inquiryAnswers = {};
+
+  // --- 简历优化（严格基于真实经历改写，不失实） ---
+  state.optimizationResults = [
+    { section:'职业摘要（新增）',
+      before:'（无）',
+      after:'AI 产品方向求职者，985 高校信息管理专业在读。有 AI 产品实习经验（01AI，大模型对话产品方向），独立完成过 2 个 AI 产品从 0 到 1 的设计（AI+CV 创作工具、AI 智慧园区方案）。熟悉 Prompt Engineering、RAG、Agent 工作流，持续通过动手实践和竞品分析深化 AI 产品理解。寻求 AI 产品经理全职机会。',
+      reason:'新增职业摘要让HR快速建立认知。坦诚说明"在读+实习"的定位，同时突出AI产品的实践深度（2个项目+实习），不夸大、不隐瞒。',
+      risk:'无编造风险——所有信息均来自你的真实简历。面试时需能展开说明项目细节。' },
+    { section:'01AI 实习经历（深化表达，不改变事实）',
+      before:'参与大模型对话产品的需求分析和 PRD 撰写',
+      after:'在 01AI 实习期间，参与大模型对话产品的需求分析，独立完成【待补充：具体模块名】的 PRD 撰写，使用 Figma 输出产品原型并与开发团队对齐需求，推动功能上线。',
+      reason:'原句用"参与"过于模糊。改为具体化描述——"独立完成XX模块PRD"是你的真实经历可以支撑的（你自己说参与PRD撰写），只需要确认具体模块名称即可。注意：如果你不是独立完成的，请改回"参与撰写"。',
+      risk:'【待确认】"独立完成"需要确保属实。如果实际是协助性质，建议改为"参与XX模块PRD的撰写，负责其中XX部分的原型设计"' },
+    { section:'Prompt 策略优化（增加具体性，不编造数据）',
+      before:'协助 Prompt 策略优化，提升对话质量',
+      after:'在实习期间协助 Prompt 策略优化工作，针对对话产品中的【待补充：具体场景，如：问答/客服/摘要】场景，尝试了【待补充：具体方法，如：调整提示词结构/增加示例/添加约束条件】等优化方法，观察到回复的【待补充：定性变化，如：准确性提升/格式更规范/幻觉减少】。',
+      reason:'从"协助优化，提升质量"这种空泛表达，改为"做了什么具体动作+观察到了什么定性变化"。不需要编造数字，用定性描述也能体现你的工作深度。',
+      risk:'【待确认】需要你补充真实的优化场景和方法。如果你不记得具体做了什么，至少能说清楚"和mentor一起尝试了不同的prompt写法"这个事实。' },
+    { section:'Tidyo APP 项目（强化产品思维）',
+      before:'负责 Tidyo APP 的产品规划与设计，定位为 AI+CV 图像创作工具',
+      after:'作为产品负责人，独立完成 Tidyo APP（AI+CV 图像创作工具）从 0 到 1 的产品设计。通过调研【待补充：做了什么样的用户调研？】，识别目标用户的核心创作痛点，定义产品 MVP 功能范围。使用 Figma 完成产品原型设计并输出完整 PRD，协调开发团队完成 AI Demo。项目获得校级创新创业大赛铜奖。',
+      reason:'保留"产品负责人"的说法（这是你自己的表述），补充完整的产品流程，体现产品方法论。',
+      risk:'低风险——均基于你的原始表述。面试时需准备好"用户调研怎么做""MVP怎么定义的"等细节回答。' },
+    { section:'智慧园区项目（强化B端产品思维）',
+      before:'研究 YOLOv8 / SAM / MiDaS 等模型在园区场景的应用',
+      after:'面向园区管理的三个核心场景（智慧导览、设施管理、安防监控），评估适合的 AI 视觉方案：YOLOv8 用于实时安防检测、SAM 用于园区区域智能分割、MiDaS 用于空间深度感知。将技术方案转化为面向非技术管理层的方案演示 PPT，获得 01AI "AI+行业"创新方案优秀奖。',
+      reason:'从"研究模型"改为"面向业务场景评估方案"，体现产品经理核心能力：业务→技术的转化。同时突出"面向非技术管理层"的沟通能力——这是ToB PM的重要能力。',
+      risk:'低风险——原始简历已包含这些信息，改写只是换了一种产品经理视角的表达。' },
+    { section:'竞品分析经历（升级分析维度）',
+      before:'调研 ChatGPT、Claude、Kimi 等国内外 AI 产品，输出竞品分析报告',
+      after:'完成国内外主流 AI 对话产品（ChatGPT、Claude、Kimi、DeepSeek）的竞品分析，从产品定位、交互体验、Prompt 策略三个维度进行比较。【待补充：你得出的1-2个关键发现是什么？】',
+      reason:'明确分析的产品名称和维度，让"竞品分析"不只是"我看了几个产品"，而是"我知道从什么角度分析产品"。',
+      risk:'低风险。需准备好每个维度的具体分析内容。如果你实际分析没有这么系统，可以简化为你实际做了的维度。' }
+  ];
+  state._originalOptimization = JSON.parse(JSON.stringify(state.optimizationResults));
+
+  // --- 最终简历（严格基于原始简历改写，不编造任何信息） ---
+  state.finalResume = {
+    name:'示例候选人', phone:'138****0000', email:'demo@example.com',
+    target:'AI 产品经理（大模型应用方向）| 期望薪资：面议',
+    summary: '985 高校信息管理专业在读，AI 产品方向。有 AI 产品实习经验（01AI，大模型对话产品），独立完成过 2 个 AI 产品从 0 到 1 的设计（AI+CV 创作工具、AI 智慧园区方案）。熟悉 Prompt Engineering、RAG、Agent 工作流，擅长竞品分析和产品原型设计。寻求 AI 产品经理全职机会。',
+    coreAbilities: [
+      'AI 产品实践：有 AI 产品实习经验 + 2 个 AI 项目从 0 到 1 的完整设计经历',
+      '产品技能：PRD 撰写、竞品分析、用户调研、原型设计（Figma）',
+      'AI 技术理解：Prompt Engineering、RAG、Agent 工作流、大模型应用原理',
+      'AI 工具链：熟练使用 ChatGPT、Claude、Kimi、DeepSeek 等主流 AI 工具',
+      '数据基础：信息管理专业，有数据分析、Python 编程、数据库原理等课程基础'
+    ],
+    experience: [
+      { title:'AI 产品实习生', company:'01AI 公司', date:'2026.04 - 至今',
+        bullets:[
+          '参与大模型对话产品需求分析，独立完成【待补充：模块名】PRD 撰写，使用 Figma 输出产品原型',
+          '协助 Prompt 策略优化，针对【待补充：场景】尝试不同 Prompt 方法，观察到【待补充：定性改善】',
+          '完成 ChatGPT / Claude / Kimi / DeepSeek 四款 AI 对话产品竞品分析，从产品定位、交互体验、Prompt 策略三维度对比',
+          '参与客户需求对接，将用户反馈整理为产品需求'
+        ]},
+    ],
+    projects: [
+      { title:'Tidyo APP — AI+CV 图像创作工具', role:'产品负责人', date:'2025.03 - 2025.09',
+        bullets:[
+          '独立完成产品从 0 到 1 的设计：用户调研 → MVP 定义 → Figma 原型 → PRD',
+          '协调开发团队完成 AI 功能 Demo 开发',
+          '项目获得校级创新创业大赛铜奖'
+        ]},
+      { title:'AI 智慧园区解决方案', role:'产品负责人', date:'2024.10',
+        bullets:[
+          '设计"智慧导览 / 设施管理 / 安防监控"三大模块，面向园区管理场景',
+          '基于业务需求评估 AI 视觉模型选型：YOLOv8（安防检测）、SAM（区域分割）、MiDaS（深度感知）',
+          '产出面向非技术管理层的方案演示，获 01AI "AI+行业"创新方案优秀奖'
+        ]}
+    ],
+    skills:'Prompt Engineering、RAG、Agent 工作流、PRD 撰写、竞品分析、用户调研、Figma 原型设计、ChatGPT / Claude / DeepSeek / Kimi、Python（基础）、SQL（学习中）',
+    education:'985 高校 | 信息管理与信息系统 | 本科 | 2024 - 2028 | CET-4: 552 | CET-6: 501'
+  };
+
+  // --- 面试准备 ---
+  state.interviewPrep = {
+    possibleQuestions: [
+      { q:'你在 01AI 实习时具体做了什么？独立负责了哪些事情？PRD 写了什么内容？', tip:'准备 2-3 个你在实习中具体做的事情，用"我做了X，结果Y发生了变化（哪怕是定性的）"来结构化回答' },
+      { q:'你协助 Prompt 优化时，具体怎么做的？用了什么方法？效果怎么样？', tip:'即使没有量化数据，也要能说清楚你的尝试过程和观察到的变化' },
+      { q:'Tidyo APP 你是怎么从 0 到 1 设计的？遇到的最大挑战是什么？', tip:'用 STAR 法则：背景→任务→行动→结果。挑战部分要真实——"最大的挑战是XX，我通过YY方法解决了"' },
+      { q:'你说你研究过 ChatGPT/Claude/Kimi/DeepSeek，你觉得它们各自最大的差异化特点是什么？', tip:'准备对每个产品的 1 句话定位理解，不要只列功能——说产品策略层面的差异' },
+      { q:'智慧园区项目中你如何做技术选型？为什么选 YOLOv8 而不是其他方案？', tip:'从业务需求反推技术选型的逻辑："因为场景需要实时检测，所以选了YOLOv8"——这是PM思维' },
+      { q:'你简历里列的 RAG 和 Agent 工作流，你学到什么程度了？能具体说说 RAG 的架构吗？', tip:'诚实回答学习进度。如果还没深入，可以说"目前理解到XX层面，正在通过XX方式深入学习"。不要装懂。' },
+      { q:'你没有全职工作经验，你认为自己能胜任 AI 产品经理岗位吗？', tip:'这题必问。回答框架：①正视差距（确实没有全职经验）②强调优势（动手做过2个AI项目+AI实习+持续学习）③表达学习能力和热情' },
+      { q:'你简历说有从0到1的产品设计经验，能具体说说产品决策中最难的一个选择吗？', tip:'比如 Tidyo 项目中：为什么选择 AI+CV 而不是纯 CV？为什么定位"创作工具"而不是"修图工具"？' },
+      { q:'你对 AI 产品经理这个岗位的理解是什么？', tip:'不只是"用AI做产品"，而是"理解AI能做什么/不能做什么，在此基础上设计产品"，体现技术边界意识' },
+      { q:'你未来的职业规划是什么？为什么想做 AI 产品经理？', tip:'准备一个真诚的故事，不一定是"改变世界"，可以是"我在实习/项目中发现了AI产品的可能性，所以想深入做"' }
+    ],
+    evidenceNeeded: [
+      '01AI 实习期间写的 PRD（脱敏版）或产品原型截图',
+      'Prompt 优化的具体案例（Before/After 对比，哪怕只有1个例子）',
+      'AI 竞品分析报告的完整版或核心结论摘要',
+      'Tidyo APP 的 Figma 原型链接或截图',
+      '智慧园区方案的 PPT 或演示视频'
+    ],
+    exaggeratedRisks: [
+      { expression:'"独立完成 PRD 撰写"', risk:'如果实际是协助/跟学性质，面试追问细节时会暴露', suggestion:'确认你的真实参与度。如果非独立完成，改为"参与XX模块PRD撰写，负责其中XX部分"' },
+      { expression:'"产品负责人"', risk:'如果在学校项目中是组长，可以这么说；如果不是，面试时被问"团队几个人、你怎么分工的"可能露馅', suggestion:'确认你的真实角色。如果只是参与者，改为"核心成员"或"产品设计负责人"' },
+      { expression:'"熟悉"Prompt/RAG/Agent', risk:'如果只是了解概念而没动手实践过，面试追问技术细节时会暴露', suggestion:'如果只是了解概念，用"了解""正在学习"更准确。建议尽快动手用 Coze/Dify 做1个Demo' }
+    ],
+    suggestedData: [
+      '实习中你写的PRD覆盖了几个功能点？（不需要精确数字，大概范围即可）',
+      'Tidyo项目的用户调研是怎么做的？访谈了几个人？（哪怕只是同学之间）',
+      '智慧园区方案的演示对象是谁？他们给了什么反馈？',
+      '你在竞品分析中得出的最有价值的一个发现',
+      '如果你用Coze/Dify搭过Agent，这个Agent具体做什么、怎么做的'
+    ],
+    selfIntro: '您好，我是示例候选人，目前是 985 高校信息管理专业在读，求职方向是 AI 产品经理。\n\n我在 01AI 有一段 AI 产品实习经历，参与了大模型对话产品的需求分析和 PRD 撰写，也协助了 Prompt 策略优化。这段经历让我对 AI 产品从需求到落地的流程有了实践认知，也积累了一定的竞品分析经验。\n\n在校期间，我独立完成了两个 AI 相关项目——Tidyo APP（AI+CV 图像创作工具）和 AI 智慧园区解决方案，都是从 0 到 1 的产品设计，分别获得了校级创新创业大赛铜奖和 01AI 创新方案优秀奖。\n\n我坦诚地说，我现在没有全职产品经验，但我有真实的 AI 产品实践经历和持续学习的动力。希望能有机会在 AI 产品经理岗位上，把我的产品基础能力和 AI 方向的积累转化为实际的产品价值。谢谢。'
+  };
+}
+
+// ===== Step 2: JD 解析 =====
+function renderStep2(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  const d = state.jdAnalysis;
+  container.innerHTML =
+    '<div class="section-title">🔍 JD 解析</div><div class="section-desc">基于目标岗位 JD，提取核心职责、要求和关键词</div>'+
+    '<div class="card"><div class="card-title">岗位核心职责</div><ol style="padding-left:20px;margin-top:8px;">'+d.responsibilities.map(r => '<li style="margin-bottom:6px;font-size:13px;">'+r+'</li>').join('')+'</ol></div>'+
+    '<div class="card"><div class="card-title">硬性要求</div><div class="tag-list mt-8">'+d.hardReqs.map(r => '<span class="badge badge-tag">'+r+'</span>').join('')+'</div></div>'+
+    '<div class="card"><div class="card-title">隐性要求</div><ul style="padding-left:20px;margin-top:8px;">'+d.hiddenReqs.map(r => '<li style="margin-bottom:4px;font-size:13px;">'+r+'</li>').join('')+'</ul></div>'+
+    '<div class="card"><div class="card-title">高频关键词</div><div class="tag-list mt-8">'+d.keywords.map(k => '<span class="badge badge-info">'+k+'</span>').join('')+'</div></div>'+
+    '<div class="card"><div class="card-title">招聘方真正想找的人</div><p style="font-size:14px;margin-top:8px;line-height:1.8;">'+d.idealCandidate+'</p></div>'+
+    '<div class="card"><div class="card-title mb-16">核心能力表</div><div class="table-wrap"><table><thead><tr><th>能力维度</th><th>重要程度</th><th>具体要求</th></tr></thead><tbody>'+d.coreAbilities.map(c => '<tr><td><strong>'+c.name+'</strong></td><td>'+c.weight+'</td><td>'+c.detail+'</td></tr>').join('')+'</tbody></table></div></div>';
+}
+
+// ===== Step 3: 简历诊断 =====
+function renderStep3(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">🩺</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  const d = state.diagnosis;
+  const sc = d.overallScore >= 70 ? 'var(--success)' : d.overallScore >= 45 ? 'var(--warning)' : 'var(--danger)';
+  container.innerHTML =
+    '<div class="section-title">🩺 简历诊断</div><div class="section-desc">从 10 个维度诊断简历问题，给出匹配度评分和修改建议</div>'+
+    '<div class="card"><div class="score-wrap"><div class="score-circle" style="color:'+sc+';background:'+sc+'15;">'+d.overallScore+'</div><div><div style="font-size:18px;font-weight:700;">整体匹配度评分</div><div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">满分 100 分 | 评分维度：10项</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">'+ (d.overallScore>=70?'匹配度较好':d.overallScore>=45?'有较大提升空间':'与JD差距较大，需正视差距并针对性补强') +'</div></div></div></div>'+
+    '<div class="card"><div class="card-title mb-16">维度评分详情</div><div class="dim-scores">'+d.dimensions.map(dim => { const cls = dim.score>=70?'high':dim.score>=45?'mid':'low'; return '<div class="dim-item"><div class="dim-label"><span>'+dim.name+'</span><span class="dim-value">'+dim.score+'分</span></div><div class="progress-bar"><div class="progress-fill '+cls+'" style="width:'+dim.score+'%"></div></div><div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">'+dim.comment+'</div></div>'; }).join('')+'</div></div>'+
+    '<div class="card"><div class="card-title mb-8">主要问题</div><ul style="padding-left:20px;">'+d.mainIssues.map(i => '<li style="margin-bottom:8px;font-size:13px;">'+i+'</li>').join('')+'</ul></div>'+
+    '<div class="card"><div class="card-title mb-8">优先修改建议</div><ol style="padding-left:20px;">'+d.priorityActions.map((a,idx) => '<li style="margin-bottom:8px;font-size:13px;"><strong>优先级 '+(idx+1)+'：</strong>'+a+'</li>').join('')+'</ol></div>';
+}
+
+// ===== Step 4: 匹配分析 =====
+function renderStep4(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  container.innerHTML =
+    '<div class="section-title">📊 匹配分析</div><div class="section-desc">逐条对照 JD 要求与简历证据，识别差距和优化方向</div>'+
+    '<div class="card"><div class="table-wrap"><table><thead><tr><th>JD 要求</th><th>简历已有证据</th><th>证据强度</th><th>需补充</th><th>优化建议</th></tr></thead><tbody>'+
+    state.matchTable.map(row => { const cls = row.strength==='强'?'badge-strong':row.strength==='中'?'badge-medium':row.strength==='弱'?'badge-weak':'badge-none'; return '<tr><td><strong>'+row.jdReq+'</strong></td><td>'+row.evidence+'</td><td><span class="badge '+cls+'">'+row.strength+'</span></td><td>'+(row.needSupplement?'<span style="color:var(--danger);">⚠ 是</span>':'<span style="color:var(--success);">✅ 否</span>')+'</td><td style="max-width:260px;">'+row.suggestion+'</td></tr>'; }).join('')+
+    '</tbody></table></div></div>';
+}
+
+// ===== Step 5: 经历追问 =====
+function renderStep5(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  container.innerHTML =
+    '<div class="section-title">💬 经历追问</div><div class="section-desc">以下问题帮助挖掘更多经历细节，填写后生成可用于简历的优化表达</div><div id="inquiryList">'+
+    state.inquiries.map(inq => '<div class="inquiry-card"><div class="q-num">追问 '+inq.id+' · '+inq.direction+'</div><div class="q-text">'+inq.question+'</div><div class="q-hint">💡 '+inq.hint+'</div><textarea class="form-textarea" id="inqAnswer'+inq.id+'" placeholder="在此填写你的回答...">'+esc(state.inquiryAnswers[inq.id]||'')+'</textarea><button class="btn btn-sm btn-secondary mt-8" onclick="generateBullet('+inq.id+')">✨ 生成优化表达</button><div class="q-result" id="inqResult'+inq.id+'"></div></div>').join('')+
+    '</div>';
+}
+
+function generateBullet(inqId) {
+  const answer = document.getElementById('inqAnswer'+inqId)?.value?.trim();
+  if (!answer) { showToast('请先填写回答'); return; }
+  state.inquiryAnswers[inqId] = answer;
+  const bullets = {
+    1: '在 01AI 实习期间参与【产品名】的需求分析，独立完成【模块名】的 PRD 撰写（覆盖【X】个功能点），使用 Figma 输出产品原型并与开发团队对齐需求。',
+    2: '协助 Prompt 策略优化，针对【具体场景】尝试了【few-shot / chain-of-thought / 角色设定 / 约束条件】等方法，观察到了【回复格式更规范 / 幻觉减少 / 覆盖更多边界情况】等定性改善。',
+    3: '作为产品负责人独立完成 Tidyo APP 从 0 到 1 的设计（调研→MVP定义→Figma原型→PRD）。复盘：如果重来，会在早期引入更多用户验证而非依赖个人判断，并加入简单的使用数据埋点。',
+    4: '通过竞品分析发现：【产品A】侧重【X策略】，【产品B】侧重【Y策略】。关键洞察：【待补充，如"差异化不在模型能力，而在产品场景深度"】',
+    5: '基于【导览/安防/设施管理】业务需求，对比评估了【YOLOv8（实时性优）/SAM（分割精度高）/其他方案（XX）】，最终选择【XX组合】以平衡【性能与部署成本】。',
+    6: '目前 RAG/Agent 理解程度：【基础概念已掌握/能说清楚架构/有动手实践】。下一步计划：用 Coze/Dify 搭建一个【具体场景如：简历优化助手/知识库问答】的 Demo。',
+    7: '在客户需求对接中收到过【具体反馈】，我通过【整理/分析/推动】将其转化为【具体行动】，最终【产生了什么变化】。',
+    8: '一句话说服：我有真实的AI产品实习+项目实战经验，虽然经验年限不足，但我对AI产品方向有持续的热情和动手能力——【具体例证】。'
+  };
+  const resultEl = document.getElementById('inqResult'+inqId);
+  resultEl.innerHTML = '<strong>📝 优化 Bullet：</strong><br>'+ (bullets[inqId] || '基于你的回答，生成优化表达：【请确保回答包含具体动作+场景+结果】');
+  resultEl.style.display = 'block';
+}
+
+// ===== Step 6: 简历优化 =====
+function renderStep6(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">✨</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  const labels = {balanced:'均衡优化',concise:'更简洁',conservative:'降低夸张',ai:'更偏 AI 产品',tob:'更偏 ToB SaaS'};
+  container.innerHTML =
+    '<div class="section-title">✨ 简历优化</div><div class="section-desc">逐段优化简历表达。标注了【待补充】的内容不会编造——需要你自行填写。<br><span style="color:var(--danger);font-size:12px;">⚠️ 所有修改严格基于你的真实经历，不确定处已标注【待确认】。</span></div>'+
+    '<div class="card"><div class="card-title mb-8">优化风格</div><div class="btn-group mt-8">'+Object.entries(labels).map(([k,v]) => '<button class="style-btn'+(state.activeStyle===k?' on':'')+'" onclick="switchStyle(\''+k+'\')">'+v+'</button>').join('')+'</div></div>'+
+    '<div class="card"><div class="card-title mb-16">修改对照表</div>'+state.optimizationResults.map(r => '<div class="diff-row"><div><div class="diff-label before">修改前</div><div class="diff-text before">'+r.before+'</div></div><div><div class="diff-label after">修改后</div><div class="diff-text after">'+r.after+'</div><div class="diff-reason">📌 '+r.reason+'</div>'+(r.risk?'<div class="diff-risk">⚠️ '+r.risk+'</div>':'')+'</div></div>').join('')+'</div>';
+}
+
+function switchStyle(style) {
+  state.activeStyle = style;
+  const orig = state._originalOptimization;
+  if (style === 'balanced') { state.optimizationResults = JSON.parse(JSON.stringify(orig)); }
+  else if (style === 'concise') { state.optimizationResults = orig.map(r => ({...r, after: r.after.replace(/（[^）]+）/g,'').replace(/【[^】]+】/g,'【待补充】').replace(/\s+/g,' ').trim()})); }
+  else if (style === 'conservative') { state.optimizationResults = orig.map(r => ({...r, after: r.after.replace(/独立完成/g,'参与完成').replace(/独立/g,'在指导下').replace(/负责/g,'参与')})); }
+  else if (style === 'ai') { state.optimizationResults = orig.map(r => ({...r, after: r.after.replace(/产品/g,'AI 产品').replace(/需求/g,'AI 场景需求')})); }
+  else if (style === 'tob') { state.optimizationResults = orig.map(r => ({...r, after: r.after.replace(/用户/g,'企业客户').replace(/产品设计/g,'SaaS 产品设计')})); }
+  renderPage(6);
+  showToast('✅ 已切换至"'+({balanced:'均衡优化',concise:'更简洁',conservative:'降低夸张',ai:'更偏 AI 产品',tob:'更偏 ToB SaaS'}[style])+'"风格');
+}
+
+// ===== Step 7: 面试准备 =====
+function renderStep7(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  const p = state.interviewPrep;
+  container.innerHTML =
+    '<div class="section-title">🎯 面试准备</div><div class="section-desc">面试官可能追问的问题、需要准备的证据和风险提示</div>'+
+    '<div class="card"><div class="card-title mb-16">🔴 可能被追问的 10 个问题</div>'+p.possibleQuestions.map((item,idx) => '<div class="interview-q"><div class="q-label">问题 '+(idx+1)+'</div><div class="q-body">'+item.q+'</div><div class="q-tip">💡 '+item.tip+'</div></div>').join('')+'</div>'+
+    '<div class="card"><div class="card-title mb-8">📋 需要准备的证据材料</div><ul style="padding-left:20px;">'+p.evidenceNeeded.map(e => '<li style="margin-bottom:6px;font-size:13px;">'+e+'</li>').join('')+'</ul></div>'+
+    '<div class="card"><div class="card-title mb-16">⚠️ 可能显得夸大的表达</div><div class="table-wrap"><table><thead><tr><th>表述</th><th>风险</th><th>建议</th></tr></thead><tbody>'+p.exaggeratedRisks.map(e => '<tr><td>'+e.expression+'</td><td>'+e.risk+'</td><td>'+e.suggestion+'</td></tr>').join('')+'</tbody></table></div></div>'+
+    '<div class="card"><div class="card-title mb-8">📊 建议补充的数据/证据</div><ul style="padding-left:20px;">'+p.suggestedData.map(d => '<li style="margin-bottom:6px;font-size:13px;">'+d+'</li>').join('')+'</ul></div>'+
+    '<div class="card"><div class="card-title mb-8">🎤 自我介绍（建议版）</div><div style="background:var(--bg);padding:16px;border-radius:var(--radius-sm);font-size:13px;line-height:2;white-space:pre-wrap;">'+p.selfIntro+'</div></div>';
+}
+
+// ===== Step 8: 导出结果 =====
+function renderStep8(container) {
+  if (!state.analysisDone) { container.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>请先在"输入材料"中点击"开始分析"</p><button class="btn btn-primary mt-16" onclick="navigateTo(1)">返回输入材料</button></div>'; return; }
+  const r = state.finalResume;
+  container.innerHTML =
+    '<div class="section-title">📦 最终简历 & 导出</div><div class="section-desc">完整优化版简历，基于真实经历改写。<mark>标注【待补充】处不会编造——需要你自行填写。</mark></div>'+
+    '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div class="card-title">完整优化版简历</div><button class="btn btn-primary btn-sm" onclick="copyFinalResume()">📋 复制到剪贴板</button></div>'+
+    '<div class="resume-preview"><div class="resume-header"><h2>'+r.name+'</h2><p>📞 '+r.phone+' &nbsp;|&nbsp; 📧 '+r.email+'</p><p style="font-weight:600;">'+r.target+'</p></div>'+
+    '<h3>职业摘要</h3><p style="font-size:13px;">'+r.summary+'</p>'+
+    '<h3>核心能力</h3><ul>'+r.coreAbilities.map(a => '<li>'+a+'</li>').join('')+'</ul>'+
+    '<h3>实习经历</h3>'+r.experience.map(exp => '<div class="exp-item"><div class="exp-title"><span>'+exp.company+' | '+exp.title+'</span><span>'+exp.date+'</span></div><ul>'+exp.bullets.map(b => '<li>'+b+'</li>').join('')+'</ul></div>').join('')+
+    '<h3>项目经历</h3>'+r.projects.map(proj => '<div class="exp-item"><div class="exp-title"><span>'+proj.title+'</span><span>'+proj.date+'</span></div><div class="exp-sub">'+proj.role+'</div><ul>'+proj.bullets.map(b => '<li>'+b+'</li>').join('')+'</ul></div>').join('')+
+    '<h3>技能工具</h3><p style="font-size:13px;">'+r.skills+'</p>'+
+    '<h3>教育背景</h3><p style="font-size:13px;">'+r.education+'</p></div></div>'+
+    '<div class="card"><div class="card-title mb-8">导出选项</div><p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">导出功能为 Demo 占位，后续可接入真实导出（PDF/Word/在线链接）</p>'+
+    '<div class="btn-group"><button class="btn btn-primary" onclick="copyFinalResume()">📋 复制文本到剪贴板</button><button class="btn btn-secondary" onclick="showToast(\'🚧 PDF 导出功能开发中，敬请期待\')">📄 导出 PDF</button><button class="btn btn-secondary" onclick="showToast(\'🚧 Word 导出功能开发中，敬请期待\')">📝 导出 Word</button></div></div>';
+}
+
+function copyFinalResume() {
+  const r = state.finalResume;
+  const text = [
+    r.name, '📞 '+r.phone+' | 📧 '+r.email, '求职意向：'+r.target, '', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '',
+    '【职业摘要】', r.summary, '',
+    '【核心能力】', ...r.coreAbilities.map(a => '• '+a), '',
+    '【实习经历】', ...r.experience.map(exp => [exp.company+' | '+exp.title+' | '+exp.date, ...exp.bullets.map(b => '• '+b), ''].join('\n')),
+    '【项目经历】', ...r.projects.map(proj => [proj.title+' | '+proj.role+' | '+proj.date, ...proj.bullets.map(b => '• '+b), ''].join('\n')),
+    '【技能工具】', r.skills, '',
+    '【教育背景】', r.education
+  ].join('\n').trim();
+  navigator.clipboard.writeText(text).then(() => showToast('✅ 已复制到剪贴板')).catch(() => showToast('⚠️ 复制失败，请手动选择文本复制'));
+}
+
+// ===== 工具函数 =====
+function esc(str) { if (!str) return ''; return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._timeout); t._timeout = setTimeout(() => t.classList.remove('show'), 2500); }
+
+// ===== 侧边栏点击 =====
+document.getElementById('stepList').addEventListener('click', (e) => {
+  const item = e.target.closest('.step-item');
+  if (!item) return;
+  const step = parseInt(item.dataset.step);
+  if (step > 2 && !state.analysisDone) { showToast('⚠️ 请先在"输入材料"中点击"开始分析"'); return; }
+  navigateTo(step);
+});
+
+// ===== 初始化 =====
+navigateTo(1);
+</script>
+</body>
+</html>

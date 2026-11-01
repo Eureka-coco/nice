@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合同审查工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body><div style="position:relative;z-index:1000;background:#fff3ce;color:#453b20;padding:14px 20px;font:14px/1.6 system-ui;border-bottom:1px solid #dbc780"><a href="../../index.html">← 返回作品集</a> · <strong>交互原型演示</strong>：使用预设样例，未调用真实 AI；输入变化不代表系统完成了对应分析。请使用脱敏示例。</div>
+
+  <!-- ═══════════ 顶部导航 ═══════════ -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-logo">审</div>
+        <span class="header-title">合同审查工作台</span>
+      </div>
+      <span class="connection-status connected" id="connectionStatus">检测中…</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ 主内容区 ═══════════ -->
+  <main class="main">
+
+    <!-- ── 首屏 ── -->
+    <section class="hero">
+      <h1>AI 合同风险识别</h1>
+      <p>上传合同，快速获得清晰可执行的审查意见</p>
+      <p class="hero-desc">系统将自动提取合同内容、识别潜在风险、检查法律引用，并生成详细修改建议</p>
+    </section>
+
+    <!-- ── 审查步骤 ── -->
+    <div class="steps-row">
+      <div class="step-item">
+        <span class="step-number">1</span> 提取合同内容
+      </div>
+      <div class="step-item">
+        <span class="step-number">2</span> 查询企业信息
+      </div>
+      <div class="step-item">
+        <span class="step-number">3</span> 审查合同条款
+      </div>
+      <div class="step-item">
+        <span class="step-number">4</span> 生成审查报告
+      </div>
+    </div>
+
+    <!-- ── 合同提交 ── -->
+    <section class="section-card">
+      <h2>提交合同审查</h2>
+
+      <form id="reviewForm" novalidate>
+        <!-- 合同类型 & 审查立场 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contractType">合同类型 *</label>
+            <select id="contractType" required>
+              <option value="">请选择合同类型</option>
+              <option value="采购合同">采购合同</option>
+              <option value="销售合同">销售合同</option>
+              <option value="服务合同">服务合同</option>
+              <option value="劳动合同">劳动合同</option>
+              <option value="保密协议">保密协议</option>
+              <option value="租赁合同">租赁合同</option>
+              <option value="合作协议">合作协议</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reviewStance">审查立场</label>
+            <select id="reviewStance">
+              <option value="中立">中立</option>
+              <option value="甲方">甲方</option>
+              <option value="乙方">乙方</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 重点审查内容 -->
+        <div class="form-group">
+          <label>重点审查内容</label>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="focusAreas" value="付款与结算"> 付款与结算
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="focusAreas" value="违约责任"> 违约责任
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="focusAreas" value="知识产权"> 知识产权
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="focusAreas" value="交付验收"> 交付验收
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="focusAreas" value="解除终止"> 解除终止
+            </label>
+          </div>
+        </div>
+
+        <!-- 补充审查要求 -->
+        <div class="form-group">
+          <label for="additionalReq">补充审查要求 <span class="optional">（选填）</span></label>
+          <input type="text" id="additionalReq" placeholder="例如：重点关注赔偿上限条款、检查是否符合 GDPR 要求等">
+        </div>
+
+        <!-- 合同文本 -->
+        <div class="form-group">
+          <label for="contractText">合同文本 <span class="optional">（上传文件或直接粘贴）</span></label>
+          <textarea id="contractText" placeholder="在此粘贴合同全文内容…&#10;&#10;或者点击下方区域上传合同文件"></textarea>
+          <div class="char-count" id="charCount">0 字</div>
+        </div>
+
+        <!-- 上传区域 -->
+        <div class="form-group" style="margin-bottom:0;">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div class="upload-hint" id="uploadHint">
+              <span>点击上传</span> 或将文件拖拽到此处
+            </div>
+            <div class="upload-file-name" id="uploadFileName" style="display:none;"></div>
+            <button type="button" class="file-remove-btn" id="fileRemoveBtn" style="display:none;">移除文件</button>
+            <div class="upload-limit">支持 PDF、Word、TXT、MD 文件，单个文件不超过 10MB</div>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt,.md" style="display:none;">
+          </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="form-error" id="formError"></div>
+
+        <!-- 操作按钮 -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="btnSubmit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            开始智能审查
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnReset">重置</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── 审查加载中 ── -->
+    <section class="loading-section" id="loadingSection">
+      <div class="loading-spinner"></div>
+      <p class="loading-text" id="loadingText">正在提取文本并逐项分析合同条款，请稍候…</p>
+    </section>
+
+    <!-- ── 错误提示 ── -->
+    <section class="error-section" id="errorSection" style="display:none;">
+      <p id="errorMessage"></p>
+      <button class="btn btn-primary" id="btnRetry">重新尝试</button>
+    </section>
+
+    <!-- ═══════════ 审查结果 ═══════════ -->
+    <section class="result-section" id="resultSection">
+
+      <!-- Mock 提示 -->
+      <div class="mock-banner" id="mockBanner">
+        <span>⚠</span> 当前为演示结果 — Coze 工作流未连接，数据为本地模拟生成
+      </div>
+
+      <!-- 演示结果已载入状态 -->
+      <div class="section-card" style="text-align:center;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2d6b36" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <h2 style="margin-top:12px; margin-bottom:4px;">演示结果已载入</h2>
+        <p style="font-size:14px; color:var(--text-muted);">
+          发现 <strong id="opinionCount">0</strong> 条审查意见，
+          其中 <span style="color:var(--red-500);">高风险 <strong id="highCount">0</strong></span>，
+          <span style="color:var(--orange-500);">中风险 <strong id="mediumCount">0</strong></span>，
+          <span style="color:var(--green-500);">低风险 <strong id="lowCount">0</strong></span>
+        </p>
+      </div>
+
+      <!-- 核验摘要 -->
+      <div class="result-summary">
+        <div class="summary-card">
+          <h3>法律引用核验</h3>
+          <div class="check-item">
+            <span class="check-icon">—</span>
+            <span class="check-summary" id="legalCheckSummary">未执行真实核验</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <h3>企业信息核验</h3>
+          <div class="check-item">
+            <span class="check-icon">—</span>
+            <span class="check-summary" id="enterpriseCheckSummary">未执行真实核验</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选按钮 -->
+      <div class="filter-bar">
+        <button class="filter-btn active" id="filterAll">全部意见</button>
+        <button class="filter-btn" id="filterHigh">高风险</button>
+        <button class="filter-btn" id="filterMedium">中风险</button>
+        <button class="filter-btn" id="filterLow">低风险</button>
+        <span class="spacer"></span>
+        <button class="btn btn-outline btn-sm" id="btnCopyAll">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          复制全部审查意见
+        </button>
+      </div>
+
+      <!-- 审查意见列表 -->
+      <div class="opinions-list" id="opinionsList">
+        <!-- 动态渲染 -->
+      </div>
+
+      <!-- 底部操作 -->
+      <div class="result-actions">
+        <button class="btn btn-primary" id="btnFeishuReport" style="display:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          查看飞书完整审查报告
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══════════ 历史记录 ═══════════ -->
+    <section class="history-section section-card" id="historySection">
+      <h2>审查历史</h2>
+      <div class="history-list" id="historyList"></div>
+      <button class="btn-clear-history" id="btnClearHistory">清空记录</button>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    合同审查工作台 · AI 辅助审查工具 · 审查结果仅供参考，不构成法律意见
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/mock-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

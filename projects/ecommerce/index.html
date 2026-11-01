@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电商营销工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body><div style="position:relative;z-index:1000;background:#fff3ce;color:#453b20;padding:14px 20px;font:14px/1.6 system-ui;border-bottom:1px solid #dbc780"><a href="../../index.html">← 返回作品集</a> · <strong>交互原型演示</strong>：使用预设样例，未调用真实 AI；输入变化不代表系统完成了对应分析。请使用脱敏示例。</div>
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>营销工作台</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="btnConfig" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          配置
+        </button>
+        <button class="btn btn-primary" id="btnGenerate">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          载入示例文案
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="main">
+    <!-- 配置面板 (默认隐藏) -->
+    <div class="config-panel" id="configPanel" style="display:none;">
+      <div class="config-card">
+        <h3>Coze 工作流配置</h3>
+        <div class="form-group">
+          <label for="apiToken">API Token</label>
+          <input type="password" id="apiToken" placeholder="输入你的 Coze API Token">
+        </div>
+        <div class="form-group">
+          <label for="workflowId">Workflow ID</label>
+          <input type="text" id="workflowId" placeholder="输入工作流 ID">
+        </div>
+        <div class="form-group">
+          <label for="baseUrl">API 地址</label>
+          <select id="baseUrl">
+            <option value="https://api.coze.cn">api.coze.cn (国内)</option>
+            <option value="https://api.coze.com">api.coze.com (国际)</option>
+            <option value="mock">Mock 模式 (演示)</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-secondary" id="btnConfigCancel">取消</button>
+          <button class="btn btn-primary" id="btnConfigSave">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-text" id="statusText">就绪 — 点击"载入示例文案"开始</span>
+    </div>
+
+    <!-- 加载动画 -->
+    <div class="loading" id="loading" style="display:none;">
+      <div class="loading-spinner"></div>
+      <p>正在载入预设营销文案…</p>
+    </div>
+
+    <!-- 空状态 -->
+    <div class="empty-state" id="emptyState">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <h3>暂无文案</h3>
+      <p>点击上方"载入示例文案"按钮，AI 将自动抓取最新资讯并为您生成营销文案</p>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="error-banner" id="errorBanner" style="display:none;">
+      <span class="error-icon">⚠</span>
+      <span class="error-message" id="errorMessage"></span>
+      <button class="error-close" id="errorClose">&times;</button>
+    </div>
+
+    <!-- 结果网格 -->
+    <div class="results-grid" id="resultsGrid">
+      <!-- 动态生成卡片 -->
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="js/coze-api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
